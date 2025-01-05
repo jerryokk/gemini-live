@@ -58,17 +58,33 @@ export function useWebcam(): UseMediaStreamResult {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          deviceId: currentDeviceId ? { exact: currentDeviceId } : undefined
+          // 默认使用后置摄像头
+          facingMode: { exact: 'environment' },
+          // 如果指定了设备ID，则优先使用设备ID
+          ...(currentDeviceId ? { deviceId: { exact: currentDeviceId } } : {})
         }
       });
       setStream(mediaStream);
       setIsStreaming(true);
       return mediaStream;
     } catch (error) {
-      console.error('Failed to start camera:', error);
-      setIsStreaming(false);
-      setStream(null);
-      throw error;
+      console.error('Failed to start camera with environment mode:', error);
+      // 如果后置摄像头失败，尝试使用前置摄像头
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user'
+          }
+        });
+        setStream(mediaStream);
+        setIsStreaming(true);
+        return mediaStream;
+      } catch (fallbackError) {
+        console.error('Failed to start camera:', fallbackError);
+        setIsStreaming(false);
+        setStream(null);
+        throw fallbackError;
+      }
     }
   };
 
