@@ -144,16 +144,18 @@ function ControlTray({
 
   //handler for swapping from one video-stream to the next
   const changeStreams = (next?: UseMediaStreamResult) => async () => {
+    // 先停止当前所有视频流
+    videoStreams.forEach((msr) => msr.stop());
+    
     if (next) {
       const mediaStream = await next.start();
       setActiveVideoStream(mediaStream);
       onVideoStreamChange(mediaStream);
     } else {
+      // 关闭视频流时,同时清空 activeVideoStream
       setActiveVideoStream(null);
       onVideoStreamChange(null);
     }
-
-    videoStreams.filter((msr) => msr !== next).forEach((msr) => msr.stop());
   };
 
   const handleSwitchCamera = async () => {
