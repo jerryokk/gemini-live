@@ -109,9 +109,6 @@ function ControlTray({
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.srcObject = activeVideoStream;
-      if (!activeVideoStream && videoRef.current.srcObject) {
-        videoRef.current.srcObject = null;
-      }
     }
 
     let timeoutId = -1;
@@ -147,16 +144,45 @@ function ControlTray({
 
   //handler for swapping from one video-stream to the next
   const changeStreams = (next?: UseMediaStreamResult) => async () => {
-    if (next) {
-      const mediaStream = await next.start();
-      setActiveVideoStream(mediaStream);
-      onVideoStreamChange(mediaStream);
-    } else {
+    // 先停止当前流
+    if (activeVideoStream) {
+      const tracks = activeVideoStream.getTracks();
+      tracks.forEach(track => {
+        track.stop();
+        activeVideoStream.removeTrack(track);
+      });
+      
+      // 确保在视频元素中清除流
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      
+      // 更新状态
       setActiveVideoStream(null);
       onVideoStreamChange(null);
     }
 
-    videoStreams.filter((msr) => msr !== next).forEach((msr) => msr.stop());
+    // 停止其他流
+    videoStreams.filter((msr) => msr !== next).forEach((msr) => {
+      if (msr.stream) {
+        const tracks = msr.stream.getTracks();
+        tracks.forEach(track => {
+          track.stop();
+          msr.stream?.removeTrack(track);
+        });
+      }
+      msr.stop();
+    });
+
+    // 如果需要启动新流
+    if (next) {
+      const mediaStream = await next.start();
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+      setActiveVideoStream(mediaStream);
+      onVideoStreamChange(mediaStream);
+    }
   };
 
   return (

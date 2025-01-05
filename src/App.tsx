@@ -48,7 +48,7 @@ function App() {
               <Altair />
               <video
                 className={cn("stream", {
-                  hidden: !videoRef.current || !videoStream,
+                  hidden: !videoRef.current || !videoStream || !videoStream.active
                 })}
                 ref={videoRef}
                 autoPlay
