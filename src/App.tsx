@@ -53,7 +53,7 @@ function App() {
             <div className="main-app-area">
               <Altair />
               <div className="stream-container">
-                {hasMultipleCameras && webcam.isStreaming && (
+                {hasMultipleCameras && videoStream && (
                   <button 
                     className="switch-camera material-symbols-outlined"
                     onClick={async () => {
