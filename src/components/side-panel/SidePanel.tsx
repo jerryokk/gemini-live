@@ -43,6 +43,22 @@ export default function SidePanel() {
   } | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  useEffect(() => {
+    const checkWindowWidth = () => {
+      if (window.innerWidth < 768) {
+        setOpen(false);
+      } else if (window.innerWidth > 1000) {
+        setOpen(true);
+      }
+    };
+
+    checkWindowWidth();
+
+    window.addEventListener('resize', checkWindowWidth);
+
+    return () => window.removeEventListener('resize', checkWindowWidth);
+  }, []);
+
   //scroll the log to the bottom when new logs come in
   useEffect(() => {
     if (loggerRef.current) {

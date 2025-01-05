@@ -231,6 +231,22 @@
       }
     }
   }
+
+  @media (max-width: 768px) {
+    &.open {
+      width: 85vw;
+    }
+    
+    &:not(.open) {
+      width: 36px;
+    }
+  }
+
+  @media (min-width: 1000px) {
+    &.open {
+      width: 400px;
+    }
+  }
 }
 .side-panel.open {
   width: 400px;
