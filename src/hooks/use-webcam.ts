@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { UseMediaStreamResult } from "./use-media-stream-mux";
 
 export function useWebcam(): UseMediaStreamResult {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [currentDeviceIndex, setCurrentDeviceIndex] = useState(0);
+  const videoDevicesRef = useRef<MediaDeviceInfo[]>([]);
 
   useEffect(() => {
     const handleStreamEnded = () => {
@@ -40,13 +42,54 @@ export function useWebcam(): UseMediaStreamResult {
     }
   }, [stream]);
 
-  const start = async () => {
+  const getVideoDevices = async () => {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter(device => device.kind === 'videoinput');
+  };
+
+  const startStream = async (deviceId?: string) => {
     const mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
+      video: deviceId ? { deviceId: { exact: deviceId } } : true,
     });
     setStream(mediaStream);
     setIsStreaming(true);
     return mediaStream;
+  };
+
+  const start = async () => {
+    try {
+      // Get all video devices
+      videoDevicesRef.current = await getVideoDevices();
+      // Start stream with first device
+      return await startStream(videoDevicesRef.current[0]?.deviceId);
+    } catch (err) {
+      console.error('Failed to get camera access:', err);
+      throw err;
+    }
+  };
+
+  const switchCamera = async () => {
+    if (!isStreaming) return;
+    
+    try {
+      // Get latest device list
+      videoDevicesRef.current = await getVideoDevices();
+      
+      if (videoDevicesRef.current.length <= 1) return;
+
+      // Stop current stream
+      stop();
+
+      // Switch to next device
+      const nextIndex = (currentDeviceIndex + 1) % videoDevicesRef.current.length;
+      setCurrentDeviceIndex(nextIndex);
+      
+      // Start new stream
+      await startStream(videoDevicesRef.current[nextIndex].deviceId);
+    } catch (err) {
+      console.error('Failed to switch camera:', err);
+      throw err;
+    }
   };
 
   const stop = () => {
@@ -57,13 +100,12 @@ export function useWebcam(): UseMediaStreamResult {
     }
   };
 
-  const result: UseMediaStreamResult = {
+  return {
     type: "webcam",
     start,
     stop,
     isStreaming,
     stream,
+    switchCamera,
   };
-
-  return result;
 }

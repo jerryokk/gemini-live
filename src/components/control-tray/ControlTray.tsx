@@ -156,6 +156,17 @@ function ControlTray({
     videoStreams.filter((msr) => msr !== next).forEach((msr) => msr.stop());
   };
 
+  const handleSwitchCamera = async () => {
+    if (webcam.isStreaming && webcam.switchCamera) {
+      await webcam.switchCamera();
+      // 更新视频流
+      if (videoRef.current && webcam.stream) {
+        videoRef.current.srcObject = webcam.stream;
+        onVideoStreamChange(webcam.stream);
+      }
+    }
+  };
+
   return (
     <section className="control-tray">
       <canvas style={{ display: "none" }} ref={renderCanvasRef} />
@@ -192,6 +203,15 @@ function ControlTray({
               offIcon="videocam"
             />
           </>
+        )}
+        {supportsVideo && webcam.isStreaming && (
+          <button
+            className="action-button"
+            onClick={handleSwitchCamera}
+            title="Switch Camera"
+          >
+            <span className="material-symbols-outlined filled">flip_camera</span>
+          </button>
         )}
         {children}
       </nav>
