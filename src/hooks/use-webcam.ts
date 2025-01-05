@@ -75,25 +75,26 @@ export function useWebcam(): UseMediaStreamResult {
   const switchCamera = async () => {
     if (devices.length > 1) {
       try {
-        // 找到下一个摄像头
-        const currentIndex = devices.findIndex(d => d.deviceId === currentDeviceId);
-        const nextIndex = (currentIndex + 1) % devices.length;
-        const nextDeviceId = devices[nextIndex].deviceId;
-
-        // 先获取新的流
-        const newStream = await navigator.mediaDevices.getUserMedia({
+        // 获取当前摄像头的设置
+        const currentFacingMode = stream?.getVideoTracks()[0]?.getSettings()?.facingMode;
+        
+        // 准备新的视频约束
+        const constraints = {
           video: {
-            deviceId: { exact: nextDeviceId }
+            // 如果当前是前置摄像头，则切换到后置，反之亦然
+            facingMode: { exact: currentFacingMode === 'user' ? 'environment' : 'user' }
           }
-        });
+        };
+
+        // 获取新的流
+        const newStream = await navigator.mediaDevices.getUserMedia(constraints);
 
         // 停止旧的流
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
         }
 
-        // 设置新的设备和流
-        setCurrentDeviceId(nextDeviceId);
+        // 设置新的流
         setStream(newStream);
         setIsStreaming(true);
         return newStream;
