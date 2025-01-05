@@ -144,36 +144,16 @@ function ControlTray({
 
   //handler for swapping from one video-stream to the next
   const changeStreams = (next?: UseMediaStreamResult) => async () => {
-    // 先停止当前所有视频流
-    videoStreams.forEach((msr) => {
-      if (msr.isStreaming) {
-        msr.stop();
-      }
-    });
-    
-    // 确保清理当前活动的视频流
-    if (activeVideoStream) {
-      activeVideoStream.getTracks().forEach(track => track.stop());
-      setActiveVideoStream(null);
-      onVideoStreamChange(null);
-    }
-
     if (next) {
       const mediaStream = await next.start();
       setActiveVideoStream(mediaStream);
       onVideoStreamChange(mediaStream);
+    } else {
+      setActiveVideoStream(null);
+      onVideoStreamChange(null);
     }
-  };
 
-  const handleSwitchCamera = async () => {
-    if (webcam.isStreaming && webcam.switchCamera) {
-      await webcam.switchCamera();
-      // 更新视频流
-      if (videoRef.current && webcam.stream) {
-        videoRef.current.srcObject = webcam.stream;
-        onVideoStreamChange(webcam.stream);
-      }
-    }
+    videoStreams.filter((msr) => msr !== next).forEach((msr) => msr.stop());
   };
 
   return (
@@ -212,15 +192,6 @@ function ControlTray({
               offIcon="videocam"
             />
           </>
-        )}
-        {supportsVideo && webcam.isStreaming && (
-          <button
-            className="action-button"
-            onClick={handleSwitchCamera}
-            title="Switch Camera"
-          >
-            <span className="material-symbols-outlined filled">cameraswitch</span>
-          </button>
         )}
         {children}
       </nav>
