@@ -210,7 +210,7 @@ function ControlTray({
             onClick={handleSwitchCamera}
             title="Switch Camera"
           >
-            <span className="material-symbols-outlined filled">flip_camera</span>
+            <span className="material-symbols-outlined filled">cameraswitch</span>
           </button>
         )}
         {children}
