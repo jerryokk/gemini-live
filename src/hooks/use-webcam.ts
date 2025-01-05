@@ -20,100 +20,33 @@ import { UseMediaStreamResult } from "./use-media-stream-mux";
 export function useWebcam(): UseMediaStreamResult {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
 
-  // 获取所有视频输入设备
-  useEffect(() => {
-    navigator.mediaDevices.enumerateDevices()
-      .then(devices => {
-        const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        setDevices(videoDevices);
-      });
-  }, []);
-
-  // 监听流结束事件
   useEffect(() => {
     const handleStreamEnded = () => {
       setIsStreaming(false);
       setStream(null);
     };
-    
     if (stream) {
-      stream.getTracks().forEach((track) => 
-        track.addEventListener("ended", handleStreamEnded)
-      );
+      stream
+        .getTracks()
+        .forEach((track) => track.addEventListener("ended", handleStreamEnded));
       return () => {
-        stream.getTracks().forEach((track) =>
-          track.removeEventListener("ended", handleStreamEnded)
-        );
+        stream
+          .getTracks()
+          .forEach((track) =>
+            track.removeEventListener("ended", handleStreamEnded),
+          );
       };
     }
   }, [stream]);
 
   const start = async () => {
-    try {
-      // 直接尝试使用后置摄像头，不考虑设备ID
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { exact: 'environment' }
-        }
-      });
-      setStream(mediaStream);
-      setIsStreaming(true);
-      return mediaStream;
-    } catch (error) {
-      console.error('Failed to start camera with environment mode:', error);
-      // 如果后置摄像头失败，尝试使用前置摄像头
-      try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'user'
-          }
-        });
-        setStream(mediaStream);
-        setIsStreaming(true);
-        return mediaStream;
-      } catch (fallbackError) {
-        console.error('Failed to start camera:', fallbackError);
-        setIsStreaming(false);
-        setStream(null);
-        throw fallbackError;
-      }
-    }
-  };
-
-  const switchCamera = async () => {
-    if (devices.length > 1) {
-      try {
-        // 获取当前摄像头的设置
-        const currentFacingMode = stream?.getVideoTracks()[0]?.getSettings()?.facingMode;
-        
-        // 准备新的视频约束
-        const constraints = {
-          video: {
-            // 如果当前是前置摄像头，则切换到后置，反之亦然
-            facingMode: { exact: currentFacingMode === 'user' ? 'environment' : 'user' }
-          }
-        };
-
-        // 获取新的流
-        const newStream = await navigator.mediaDevices.getUserMedia(constraints);
-
-        // 停止旧的流
-        if (stream) {
-          stream.getTracks().forEach(track => track.stop());
-        }
-
-        // 设置新的流
-        setStream(newStream);
-        setIsStreaming(true);
-        return newStream;
-      } catch (error) {
-        console.error('Failed to switch camera:', error);
-        return stream; // 如果切换失败，返回当前流
-      }
-    }
-    return stream;
+    const mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+    });
+    setStream(mediaStream);
+    setIsStreaming(true);
+    return mediaStream;
   };
 
   const stop = () => {
@@ -130,8 +63,6 @@ export function useWebcam(): UseMediaStreamResult {
     stop,
     isStreaming,
     stream,
-    devices,
-    switchCamera
   };
 
   return result;

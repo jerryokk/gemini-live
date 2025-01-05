@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import "./App.scss";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import SidePanel from "./components/side-panel/SidePanel";
 import { Altair } from "./components/altair/Altair";
 import ControlTray from "./components/control-tray/ControlTray";
 import cn from "classnames";
-import { useWebcam } from "./hooks/use-webcam";
 
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
 if (typeof API_KEY !== "string") {
@@ -32,17 +31,11 @@ const host = "generativelanguage.googleapis.com";
 const uri = `wss://${host}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`;
 
 function App() {
+  // this video reference is used for displaying the active stream, whether that is the webcam or screen capture
+  // feel free to style as you see fit
   const videoRef = useRef<HTMLVideoElement>(null);
+  // either the screen capture, the video or null, if null we hide it
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
-  const webcam = useWebcam();
-  const isWebcam = videoStream?.getVideoTracks()[0]?.getSettings()?.facingMode === "user";
-  const hasMultipleCameras = webcam.devices && webcam.devices.length > 1;
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.srcObject = videoStream;
-    }
-  }, [videoStream]);
 
   return (
     <div className="App">
@@ -51,43 +44,25 @@ function App() {
           <SidePanel />
           <main>
             <div className="main-app-area">
+              {/* APP goes here */}
               <Altair />
-              <div className="stream-container">
-                {hasMultipleCameras && videoStream && (
-                  <button 
-                    className="switch-camera material-symbols-outlined"
-                    onClick={async () => {
-                      try {
-                        if (webcam.switchCamera) {
-                          const newStream = await webcam.switchCamera();
-                          if (newStream) {
-                            setVideoStream(newStream);
-                          }
-                        }
-                      } catch (error) {
-                        console.error('Error switching camera:', error);
-                      }
-                    }}
-                  >
-                    flip_camera_android
-                  </button>
-                )}
-                <video
-                  className={cn("stream", {
-                    hidden: !videoStream,
-                    webcam: isWebcam
-                  })}
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                />
-              </div>
+              <video
+                className={cn("stream", {
+                  hidden: !videoRef.current || !videoStream,
+                  webcam: videoStream?.getVideoTracks()[0].getSettings().facingMode === "user"
+                })}
+                ref={videoRef}
+                autoPlay
+                playsInline
+              />
             </div>
+
             <ControlTray
               videoRef={videoRef}
               supportsVideo={true}
               onVideoStreamChange={setVideoStream}
             >
+              {/* put your own buttons here */}
             </ControlTray>
           </main>
         </div>

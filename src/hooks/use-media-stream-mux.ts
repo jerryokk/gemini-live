@@ -20,6 +20,4 @@ export type UseMediaStreamResult = {
   stop: () => void;
   isStreaming: boolean;
   stream: MediaStream | null;
-  devices?: MediaDeviceInfo[];
-  switchCamera?: () => Promise<MediaStream | null>;
 };
