@@ -21,7 +21,6 @@ export function useWebcam(): UseMediaStreamResult {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-  const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
 
   // 获取所有视频输入设备
   useEffect(() => {
@@ -29,9 +28,6 @@ export function useWebcam(): UseMediaStreamResult {
       .then(devices => {
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         setDevices(videoDevices);
-        if (videoDevices.length > 0 && !currentDeviceId) {
-          setCurrentDeviceId(videoDevices[0].deviceId);
-        }
       });
   }, []);
 
@@ -56,12 +52,10 @@ export function useWebcam(): UseMediaStreamResult {
 
   const start = async () => {
     try {
+      // 直接尝试使用后置摄像头，不考虑设备ID
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          // 默认使用后置摄像头
-          facingMode: { exact: 'environment' },
-          // 如果指定了设备ID，则优先使用设备ID
-          ...(currentDeviceId ? { deviceId: { exact: currentDeviceId } } : {})
+          facingMode: { exact: 'environment' }
         }
       });
       setStream(mediaStream);
