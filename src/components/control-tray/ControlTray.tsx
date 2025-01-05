@@ -46,11 +46,11 @@ type MediaStreamButtonProps = {
 const MediaStreamButton = memo(
   ({ isStreaming, onIcon, offIcon, start, stop }: MediaStreamButtonProps) =>
     isStreaming ? (
-      <button className="action-button" onClick={stop}>
+      <button className="action-button" onClick={stop} title={onIcon}>
         <span className="material-symbols-outlined">{onIcon}</span>
       </button>
     ) : (
-      <button className="action-button" onClick={start}>
+      <button className="action-button" onClick={start} title={offIcon}>
         <span className="material-symbols-outlined">{offIcon}</span>
       </button>
     ),
@@ -144,45 +144,28 @@ function ControlTray({
 
   //handler for swapping from one video-stream to the next
   const changeStreams = (next?: UseMediaStreamResult) => async () => {
-    // 先停止当前流
-    if (activeVideoStream) {
-      const tracks = activeVideoStream.getTracks();
-      tracks.forEach(track => {
-        track.stop();
-        activeVideoStream.removeTrack(track);
-      });
-      
-      // 确保在视频元素中清除流
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-      
-      // 更新状态
+    if (next) {
+      const mediaStream = await next.start();
+      setActiveVideoStream(mediaStream);
+      onVideoStreamChange(mediaStream);
+    } else {
       setActiveVideoStream(null);
       onVideoStreamChange(null);
     }
 
-    // 停止其他流
-    videoStreams.filter((msr) => msr !== next).forEach((msr) => {
-      if (msr.stream) {
-        const tracks = msr.stream.getTracks();
-        tracks.forEach(track => {
-          track.stop();
-          msr.stream?.removeTrack(track);
-        });
-      }
-      msr.stop();
-    });
+    videoStreams.filter((msr) => msr !== next).forEach((msr) => msr.stop());
+  };
 
-    // 如果需要启动新流
-    if (next) {
-      const mediaStream = await next.start();
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      setActiveVideoStream(mediaStream);
-      onVideoStreamChange(mediaStream);
+  const handleDisconnect = () => {
+    if (webcam.isStreaming) {
+      const webcamButton = document.querySelector('button[title="videocam_off"]');
+      (webcamButton as HTMLButtonElement)?.click();
     }
+    if (screenCapture.isStreaming) {
+      const screenButton = document.querySelector('button[title="cancel_presentation"]');
+      (screenButton as HTMLButtonElement)?.click();
+    }
+    disconnect();
   };
 
   return (
@@ -230,10 +213,10 @@ function ControlTray({
           <button
             ref={connectButtonRef}
             className={cn("action-button connect-toggle", { connected })}
-            onClick={connected ? disconnect : connect}
+            onClick={connected ? handleDisconnect : connect}
           >
             <span className="material-symbols-outlined filled">
-              {connected ? "pause" : "play_arrow"}
+              {connected ? "stop" : "play_arrow"}
             </span>
           </button>
         </div>
