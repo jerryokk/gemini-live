@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import "./App.scss";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import SidePanel from "./components/side-panel/SidePanel";
@@ -35,8 +35,14 @@ function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const webcam = useWebcam();
-  const isWebcam = videoStream?.getVideoTracks()[0].getSettings().facingMode === "user";
+  const isWebcam = videoStream?.getVideoTracks()[0]?.getSettings()?.facingMode === "user";
   const hasMultipleCameras = webcam.devices && webcam.devices.length > 1;
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = videoStream;
+    }
+  }, [videoStream]);
 
   return (
     <div className="App">
@@ -47,13 +53,19 @@ function App() {
             <div className="main-app-area">
               <Altair />
               <div className="stream-container">
-                {hasMultipleCameras && isWebcam && (
+                {hasMultipleCameras && webcam.isStreaming && (
                   <button 
                     className="switch-camera material-symbols-outlined"
                     onClick={async () => {
-                      if (webcam.switchCamera) {
-                        const newStream = await webcam.switchCamera();
-                        setVideoStream(newStream);
+                      try {
+                        if (webcam.switchCamera) {
+                          const newStream = await webcam.switchCamera();
+                          if (newStream) {
+                            setVideoStream(newStream);
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Error switching camera:', error);
                       }
                     }}
                   >
@@ -62,7 +74,7 @@ function App() {
                 )}
                 <video
                   className={cn("stream", {
-                    hidden: !videoRef.current || !videoStream,
+                    hidden: !videoStream,
                     webcam: isWebcam
                   })}
                   ref={videoRef}

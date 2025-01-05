@@ -73,7 +73,7 @@ export function useWebcam(): UseMediaStreamResult {
   };
 
   const switchCamera = async () => {
-    if (isStreaming && devices.length > 1) {
+    if (devices.length > 1) {
       try {
         // 找到下一个摄像头
         const currentIndex = devices.findIndex(d => d.deviceId === currentDeviceId);
@@ -95,6 +95,7 @@ export function useWebcam(): UseMediaStreamResult {
         // 设置新的设备和流
         setCurrentDeviceId(nextDeviceId);
         setStream(newStream);
+        setIsStreaming(true);
         return newStream;
       } catch (error) {
         console.error('Failed to switch camera:', error);
