@@ -35,28 +35,71 @@ export function useWebcam(): UseMediaStreamResult {
       });
   }, []);
 
+  // 监听流结束事件
+  useEffect(() => {
+    const handleStreamEnded = () => {
+      setIsStreaming(false);
+      setStream(null);
+    };
+    
+    if (stream) {
+      stream.getTracks().forEach((track) => 
+        track.addEventListener("ended", handleStreamEnded)
+      );
+      return () => {
+        stream.getTracks().forEach((track) =>
+          track.removeEventListener("ended", handleStreamEnded)
+        );
+      };
+    }
+  }, [stream]);
+
   const start = async () => {
-    const mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        deviceId: currentDeviceId ? { exact: currentDeviceId } : undefined
-      }
-    });
-    setStream(mediaStream);
-    setIsStreaming(true);
-    return mediaStream;
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          deviceId: currentDeviceId ? { exact: currentDeviceId } : undefined
+        }
+      });
+      setStream(mediaStream);
+      setIsStreaming(true);
+      return mediaStream;
+    } catch (error) {
+      console.error('Failed to start camera:', error);
+      setIsStreaming(false);
+      setStream(null);
+      throw error;
+    }
   };
 
   const switchCamera = async () => {
     if (isStreaming && devices.length > 1) {
-      const currentIndex = devices.findIndex(d => d.deviceId === currentDeviceId);
-      const nextIndex = (currentIndex + 1) % devices.length;
-      setCurrentDeviceId(devices[nextIndex].deviceId);
-      
-      // 停止当前流
-      stop();
-      // 启动新的流
-      const newStream = await start();
-      return newStream;
+      try {
+        // 找到下一个摄像头
+        const currentIndex = devices.findIndex(d => d.deviceId === currentDeviceId);
+        const nextIndex = (currentIndex + 1) % devices.length;
+        const nextDeviceId = devices[nextIndex].deviceId;
+
+        // 先获取新的流
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            deviceId: { exact: nextDeviceId }
+          }
+        });
+
+        // 停止旧的流
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
+
+        // 设置新的设备和流
+        setCurrentDeviceId(nextDeviceId);
+        setStream(newStream);
+        return newStream;
+      } catch (error) {
+        console.error('Failed to switch camera:', error);
+        return stream; // 如果切换失败，返回当前流
+      }
     }
     return stream;
   };
