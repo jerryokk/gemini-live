@@ -33,7 +33,7 @@
   width: 40px; /* when closed */
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
   transition: all 0.2s ease-in;
   font-family: Arial, sans-serif;
   border-right: 1px solid var(--gray-600);
@@ -234,7 +234,7 @@
 }
 .side-panel.open {
   width: 400px;
-  height: 100vh;
+  height: 100dvh;
 }
 
 .side-panel-responses,
