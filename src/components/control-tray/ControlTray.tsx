@@ -145,16 +145,23 @@ function ControlTray({
   //handler for swapping from one video-stream to the next
   const changeStreams = (next?: UseMediaStreamResult) => async () => {
     // 先停止当前所有视频流
-    videoStreams.forEach((msr) => msr.stop());
+    videoStreams.forEach((msr) => {
+      if (msr.isStreaming) {
+        msr.stop();
+      }
+    });
     
+    // 确保清理当前活动的视频流
+    if (activeVideoStream) {
+      activeVideoStream.getTracks().forEach(track => track.stop());
+      setActiveVideoStream(null);
+      onVideoStreamChange(null);
+    }
+
     if (next) {
       const mediaStream = await next.start();
       setActiveVideoStream(mediaStream);
       onVideoStreamChange(mediaStream);
-    } else {
-      // 关闭视频流时,同时清空 activeVideoStream
-      setActiveVideoStream(null);
-      onVideoStreamChange(null);
     }
   };
 
