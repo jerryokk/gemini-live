@@ -168,4 +168,8 @@ body {
   max-width: 90%;
   border-radius: 32px;
   max-height: fit-content;
+  
+  &.webcam {
+    transform: scaleX(-1);
+  }
 }

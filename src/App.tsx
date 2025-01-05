@@ -49,6 +49,7 @@ function App() {
               <video
                 className={cn("stream", {
                   hidden: !videoRef.current || !videoStream,
+                  webcam: videoStream?.getVideoTracks()[0].getSettings().facingMode === "user"
                 })}
                 ref={videoRef}
                 autoPlay
