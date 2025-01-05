@@ -20,33 +20,45 @@ import { UseMediaStreamResult } from "./use-media-stream-mux";
 export function useWebcam(): UseMediaStreamResult {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
 
+  // 获取所有视频输入设备
   useEffect(() => {
-    const handleStreamEnded = () => {
-      setIsStreaming(false);
-      setStream(null);
-    };
-    if (stream) {
-      stream
-        .getTracks()
-        .forEach((track) => track.addEventListener("ended", handleStreamEnded));
-      return () => {
-        stream
-          .getTracks()
-          .forEach((track) =>
-            track.removeEventListener("ended", handleStreamEnded),
-          );
-      };
-    }
-  }, [stream]);
+    navigator.mediaDevices.enumerateDevices()
+      .then(devices => {
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setDevices(videoDevices);
+        if (videoDevices.length > 0 && !currentDeviceId) {
+          setCurrentDeviceId(videoDevices[0].deviceId);
+        }
+      });
+  }, []);
 
   const start = async () => {
     const mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
+      video: {
+        deviceId: currentDeviceId ? { exact: currentDeviceId } : undefined
+      }
     });
     setStream(mediaStream);
     setIsStreaming(true);
     return mediaStream;
+  };
+
+  const switchCamera = async () => {
+    if (isStreaming && devices.length > 1) {
+      const currentIndex = devices.findIndex(d => d.deviceId === currentDeviceId);
+      const nextIndex = (currentIndex + 1) % devices.length;
+      setCurrentDeviceId(devices[nextIndex].deviceId);
+      
+      // 停止当前流
+      stop();
+      // 启动新的流
+      const newStream = await start();
+      return newStream;
+    }
+    return stream;
   };
 
   const stop = () => {
@@ -63,6 +75,8 @@ export function useWebcam(): UseMediaStreamResult {
     stop,
     isStreaming,
     stream,
+    devices,
+    switchCamera
   };
 
   return result;
